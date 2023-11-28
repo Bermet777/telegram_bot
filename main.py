@@ -8,7 +8,7 @@ API_KEY = "9ee30c3d4c072a847cde3cc1d93817b5"
 # Define function to handle the /start command
 def start(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id,
-                             text="Welcome to the weather bot. Please send me your latitude and longitude coordinates.")
+                             text="Welcome to the weather bot. Send me your latitude and longitude coordinates.")
 
 
 # Define function to handle user messages
