@@ -18,7 +18,7 @@ def get_weather(update, context):
         lat, lon = update.message.text.split(",")
     except ValueError:
         context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Invalid input, please send your latitude and longitude as two comma-separated values.")
+                                 text="Invalid input, send your latitude and longitude as two comma-separated values.")
         return
 
     # API request URL
