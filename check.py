@@ -8,6 +8,6 @@ bot = telebot.TeleBot(BOT_TOKEN)
 
 @bot.message_handler(commands=['start', 'hello'])
 def send_welcome(message):
-    bot.reply_to(message, "How can I help you?")
+    bot.reply_to(message, "Hello!How can I help you?")
 
 bot.infinity_polling()
