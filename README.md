@@ -9,4 +9,3 @@ Before running the Weather Bot, ensure you have the following prerequisites inst
 Python 3.x
 Python requests library (install using pip install requests)
 Python python-telegram-bot library (install using pip install python-telegram-bot)
-An OpenWeatherMap API key (sign up at https://openweathermap.org/api)
