@@ -1,57 +1,79 @@
+import os
 import requests
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
-# API key from OpenWeatherMap
-API_KEY = "9ee30c3d4c072a847cde3cc1d93817b5"
+# Get API keys from environment variables
+API_KEY = os.getenv("API_KEY")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 
 # Define function to handle the /start command
 def start(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id,
-                             text="Welcome to weather bot. Send me latitude and longitude coordinates")
+                             text="Welcome to the Weather Bot! Send me your latitude and longitude as comma-separated values, e.g., '37.7749,-122.4194'.")
 
 
 # Define function to handle user messages
 def get_weather(update, context):
-    # Extract latitude and longitude coordinates from user message
     try:
-        lat, lon = update.message.text.split(",")
+        # Extract latitude and longitude
+        lat, lon = update.message.text.strip().split(",")
+        lat = float(lat.strip())
+        lon = float(lon.strip())
     except ValueError:
         context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Invalid input, please send your latitude and longitude as two comma-separated values.")
+                                 text="Invalid input! Please send your latitude and longitude as two comma-separated values, e.g., '37.7749,-122.4194'.")
         return
 
     # API request URL
-    url = f"http://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API_KEY}"
+    url = f"http://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API_KEY}&units=metric"
 
-    # Send API request and get response
-    response = requests.get(url)
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an error for HTTP errors
+        data = response.json()
 
-    # Parse JSON response into a dictionary
-    data = response.json()
+        # Check if the response contains weather data
+        if "main" in data and "weather" in data:
+            temp = data["main"]["temp"]
+            description = data["weather"][0]["description"]
+            city = data.get("name", "Unknown location")
 
-    # Extract weather information from dictionary
-    temp = data["main"]["temp"]
-    description = data["weather"][0]["description"]
+            # Send weather information back to user
+            context.bot.send_message(chat_id=update.effective_chat.id,
+                                     text=f"Weather in {city}:\nTemperature: {temp:.1f}°C\nDescription: {description.capitalize()}")
+        else:
+            context.bot.send_message(chat_id=update.effective_chat.id,
+                                     text="Unable to fetch weather data. Please check your coordinates and try again.")
+    except requests.RequestException as e:
+        context.bot.send_message(chat_id=update.effective_chat.id,
+                                 text="Error fetching data from the weather service. Please try again later.")
+        print(f"Error: {e}")
 
-    # Send weather information back to user
+
+# Define a /help command
+def help_command(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id,
-                             text=f"Temperature: {temp:.1f}°C\nDescription: {description.capitalize()}")
+                             text="This bot provides weather updates. Send latitude and longitude as comma-separated values, e.g., '37.7749,-122.4194'.")
 
+
+# Handle unknown commands
+def unknown(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                             text="Sorry, I didn't understand that command. Type /help for assistance.")
 
 
 # Create the updater and dispatcher
-updater = Updater (token="6066026423:AAGClrZrJ1izJVOQW7uWe9a8oPZczbNYBO0", use_context=True)
+updater = Updater(token=BOT_TOKEN, use_context=True)
 dispatcher = updater.dispatcher
 
 # Define the handlers
-start_handler = CommandHandler('start', start)
-weather_handler = MessageHandler(Filters.text & ~Filters.command, get_weather)
-
-# Add the handlers to the dispatcher
-dispatcher.add_handler(start_handler)
-dispatcher.add_handler(weather_handler)
+dispatcher.add_handler(CommandHandler('start', start))
+dispatcher.add_handler(CommandHandler('help', help_command))
+dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, get_weather))
+dispatcher.add_handler(MessageHandler(Filters.command, unknown))  # Catch unknown commands
 
 # Start the bot
-updater.start_polling()
-updater.idle()
+if __name__ == "__main__":
+    updater.start_polling()
+    updater.idle()
