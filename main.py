@@ -1,28 +1,34 @@
 import os
 import requests
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 # Get API keys from environment variables
 API_KEY = os.getenv("API_KEY")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
+if not API_KEY or not BOT_TOKEN:
+    raise ValueError("API_KEY and BOT_TOKEN must be set as environment variables.")
+
 
 # Define function to handle the /start command
-def start(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                             text="Welcome to the Weather Bot! Send me your latitude and longitude as comma-separated values, e.g., '37.7749,-122.4194'.")
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Welcome to the Weather Bot! Send me your latitude and longitude as comma-separated values, e.g., '37.7749,-122.4194'."
+    )
 
 
 # Define function to handle user messages
-def get_weather(update, context):
+async def get_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # Extract latitude and longitude
         lat, lon = update.message.text.strip().split(",")
         lat = float(lat.strip())
         lon = float(lon.strip())
     except ValueError:
-        context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Invalid input! Please send your latitude and longitude as two comma-separated values, e.g., '37.7749,-122.4194'.")
+        await update.message.reply_text(
+            "Invalid input! Please send your latitude and longitude as two comma-separated values, e.g., '37.7749,-122.4194'."
+        )
         return
 
     # API request URL
@@ -40,40 +46,43 @@ def get_weather(update, context):
             city = data.get("name", "Unknown location")
 
             # Send weather information back to user
-            context.bot.send_message(chat_id=update.effective_chat.id,
-                                     text=f"Weather in {city}:\nTemperature: {temp:.1f}°C\nDescription: {description.capitalize()}")
+            await update.message.reply_text(
+                f"Weather in {city}:\nTemperature: {temp:.1f}°C\nDescription: {description.capitalize()}"
+            )
         else:
-            context.bot.send_message(chat_id=update.effective_chat.id,
-                                     text="Unable to fetch weather data. Please check your coordinates and try again.")
+            await update.message.reply_text(
+                "Unable to fetch weather data. Please check your coordinates and try again."
+            )
     except requests.RequestException as e:
-        context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Error fetching data from the weather service. Please try again later.")
+        await update.message.reply_text(
+            "Error fetching data from the weather service. Please try again later."
+        )
         print(f"Error: {e}")
 
 
 # Define a /help command
-def help_command(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                             text="This bot provides weather updates. Send latitude and longitude as comma-separated values, e.g., '37.7749,-122.4194'.")
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "This bot provides weather updates. Send latitude and longitude as comma-separated values, e.g., '37.7749,-122.4194'."
+    )
 
 
 # Handle unknown commands
-def unknown(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                             text="Sorry, I didn't understand that command. Type /help for assistance.")
+async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Sorry, I didn't understand that command. Type /help for assistance."
+    )
 
 
-# Create the updater and dispatcher
-updater = Updater(token=BOT_TOKEN, use_context=True)
-dispatcher = updater.dispatcher
+# Create the application and handlers
+app = Application.builder().token(BOT_TOKEN).build()
 
-# Define the handlers
-dispatcher.add_handler(CommandHandler('start', start))
-dispatcher.add_handler(CommandHandler('help', help_command))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, get_weather))
-dispatcher.add_handler(MessageHandler(Filters.command, unknown))  # Catch unknown commands
+# Add handlers
+app.add_handler(CommandHandler('start', start))
+app.add_handler(CommandHandler('help', help_command))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, get_weather))
+app.add_handler(MessageHandler(filters.COMMAND, unknown))  # Catch unknown commands
 
 # Start the bot
 if __name__ == "__main__":
-    updater.start_polling()
-    updater.idle()
+    app.run_polling()
