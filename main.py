@@ -14,7 +14,7 @@ if not API_KEY or not BOT_TOKEN:
 # Define function to handle the /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Welcome to the Weather Bot! Send me your latitude and longitude as comma-separated values, e.g., '37.7749,-122.4194'."
+        "Welcome to the Weather Bot! Send me your latitude and longitude as comma-separated values, for example, '37.7749,-122.4194'."
     )
 
 
