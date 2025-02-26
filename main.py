@@ -27,7 +27,7 @@ async def get_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lon = float(lon.strip())
     except ValueError:
         await update.message.reply_text(
-            "Invalid input! Please send your latitude and longitude as two comma-separated values, e.g., '37.7749,-122.4194'."
+            "Invalid input! Please send as two comma-separated values, e.g., '37.7749,-122.4194'."
         )
         return
 
